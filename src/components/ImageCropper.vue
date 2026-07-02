@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, nextTick, onBeforeUnmount } from 'vue'
+import { ref, shallowRef, watch, onMounted, nextTick, onBeforeUnmount } from 'vue'
 import Cropper from 'cropperjs'
 import 'cropperjs/dist/cropper.css'
 import { useEditorStore } from '../stores/editor'
@@ -7,14 +7,14 @@ import { useEditorStore } from '../stores/editor'
 const store = useEditorStore()
 
 const imgEl = ref<HTMLImageElement | null>(null)
-let cropper: Cropper | null = null
+const cropper = shallowRef<Cropper | null>(null)
 
 function setupCropper(src: string) {
   if (!imgEl.value) return
   imgEl.value.src = src
   imgEl.value.onload = () => {
     destroyCropper()
-    cropper = new Cropper(imgEl.value!, {
+    cropper.value = new Cropper(imgEl.value!, {
       viewMode: 1,
       autoCropArea: 1,
       movable: true,
@@ -22,7 +22,7 @@ function setupCropper(src: string) {
       ready() {
         // Restore previous crop box when returning from adjustments (not a full reset)
         if (store.cropData) {
-          cropper?.setData(store.cropData)
+          cropper.value?.setData(store.cropData)
         }
       },
     })
@@ -47,20 +47,20 @@ watch(
 )
 
 function applyCrop() {
-  if (!cropper) return
-  const canvas = cropper.getCroppedCanvas()
-  const data = cropper.getData(true) // true = round to whole pixels
+  if (!cropper.value) return
+  const canvas = cropper.value.getCroppedCanvas()
+  const data = cropper.value.getData(true)
   store.setCropped(canvas.toDataURL('image/png'), data)
 }
 
 function resetCrop() {
-  cropper?.reset()
+  cropper.value?.reset()
   store.resetEdits()
 }
 
 function destroyCropper() {
-  cropper?.destroy()
-  cropper = null
+  cropper.value?.destroy()
+  cropper.value = null
 }
 
 onBeforeUnmount(destroyCropper)
